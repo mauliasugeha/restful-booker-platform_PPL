@@ -35,49 +35,100 @@ public class MessageServiceWhiteBoxTest {
     }
 
     @Test
-    public void testPath1() throws SQLException {
-        // Path 1: 1-2-3-4-7
-        when(authRequests.postCheckAuth("abc")).thenReturn(true);
-        when(messageDB.delete(1)).thenReturn(true);
+    public void testPath1_InvalidMessageId() throws SQLException {
+        // Path 1: 1-2-3-16
+        MessageResult result = messageService.deleteMessage(-1, "valid_token");
 
-        MessageResult result = messageService.deleteMessage(1, "abc");
+        System.out.println("Test Case : TC-UNIT-12");
+        System.out.println("Path      : 1-2-3-16");
+        System.out.println("Input     : messageId = -1, authToken = valid_token");
+        System.out.println("Expected  : 400 BAD_REQUEST");
+        System.out.println("Actual    : " + result.getHttpStatus());
 
-        System.out.println("Test Case - TC-UNIT-11");
-        System.out.println("Path     : 1-2-3-4-7");
-        System.out.println("Expected : 202 ACCEPTED");
-        System.out.println("Actual   : " + result.getHttpStatus());
-
-        assertEquals(HttpStatus.ACCEPTED, result.getHttpStatus());
+        assertEquals(HttpStatus.BAD_REQUEST, result.getHttpStatus());
     }
 
     @Test
-    public void testPath2() throws SQLException {
-        // Path 2: 1-2-3-5-7
-        when(authRequests.postCheckAuth("abc")).thenReturn(true);
+    public void testPath2_NullToken() throws SQLException {
+        // Path 2: 1-2-4-5-16
+
+        when(authRequests.postCheckAuth(null)).thenReturn(false);
+
+        MessageResult result = messageService.deleteMessage(1, null);
+
+        System.out.println("Test Case : TC-UNIT-13");
+        System.out.println("Path      : 1-2-4-5-16");
+        System.out.println("Input     : messageId = 1, authToken = null");
+        System.out.println("Expected  : 403 FORBIDDEN");
+        System.out.println("Actual    : " + result.getHttpStatus());
+
+        assertEquals(HttpStatus.FORBIDDEN, result.getHttpStatus());
+    }
+
+    @Test
+    public void testPath3_InvalidToken() throws SQLException {
+        // Path 3: 1-2-4-6-7-8-16
+        when(authRequests.postCheckAuth("invalid_token")).thenReturn(false);
+
+        MessageResult result = messageService.deleteMessage(1, "invalid_token");
+
+        System.out.println("Test Case : TC-UNIT-14");
+        System.out.println("Path      : 1-2-4-6-7-8-16");
+        System.out.println("Input     : messageId = 1, authToken = invalid_token");
+        System.out.println("Expected  : 403 FORBIDDEN");
+        System.out.println("Actual    : " + result.getHttpStatus());
+
+        assertEquals(HttpStatus.FORBIDDEN, result.getHttpStatus());
+    }
+
+    @Test
+    public void testPath4_MessageNotFound() throws SQLException {
+        // Path 4: 1-2-4-6-7-9-10-11-16
+        when(authRequests.postCheckAuth("valid_token")).thenReturn(true);
         when(messageDB.delete(999)).thenReturn(false);
 
-        MessageResult result = messageService.deleteMessage(999, "abc");
+        MessageResult result = messageService.deleteMessage(999, "valid_token");
 
-        System.out.println("Test Case - TC-UNIT-12");
-        System.out.println("Path     : 1-2-3-5-7");
-        System.out.println("Expected : 404 NOT_FOUND");
-        System.out.println("Actual   : " + result.getHttpStatus());
+        System.out.println("Test Case : TC-UNIT-15");
+        System.out.println("Path      : 1-2-4-6-7-9-10-11-16");
+        System.out.println("Input     : messageId = 999, authToken = valid_token");
+        System.out.println("Expected  : 404 NOT_FOUND");
+        System.out.println("Actual    : " + result.getHttpStatus());
 
         assertEquals(HttpStatus.NOT_FOUND, result.getHttpStatus());
     }
 
     @Test
-    public void testPath3() throws SQLException {
-        // Path 3: 1-2-6-7
-        when(authRequests.postCheckAuth("invalid-token")).thenReturn(false);
+    public void testPath5_DeleteFailed() throws SQLException {
+        // Path 5: 1-2-4-6-7-9-10-12-13-14-16
+        when(authRequests.postCheckAuth("valid_token")).thenReturn(true);
+        when(messageDB.delete(1)).thenReturn(false);
 
-        MessageResult result = messageService.deleteMessage(1, "invalid-token");
+        MessageResult result = messageService.deleteMessage(1, "valid_token");
 
-        System.out.println("Test Case - TC-UNIT-13");
-        System.out.println("Path     : 1-2-6-7");
-        System.out.println("Expected : 403 FORBIDDEN");
-        System.out.println("Actual   : " + result.getHttpStatus());
+        System.out.println("Test Case : TC-UNIT-16");
+        System.out.println("Path      : 1-2-4-6-7-9-10-12-13-14-16");
+        System.out.println("Input     : messageId = 1, authToken = valid_token, delete gagal");
+        System.out.println("Expected  : 500 INTERNAL_SERVER_ERROR");
+        System.out.println("Actual    : " + result.getHttpStatus());
 
-        assertEquals(HttpStatus.FORBIDDEN, result.getHttpStatus());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getHttpStatus());
+    }
+
+    @Test
+    public void testPath6_DeleteSuccess() throws SQLException {
+        // Path 6: 1-2-4-6-7-9-10-12-13-15-16
+        when(authRequests.postCheckAuth("valid_token")).thenReturn(true);
+        when(messageDB.delete(1)).thenReturn(true);
+
+        MessageResult result = messageService.deleteMessage(1, "valid_token");
+
+        System.out.println("Test Case : TC-UNIT-17");
+        System.out.println("Path      : 1-2-4-6-7-9-10-12-13-15-16");
+        System.out.println("Input     : messageId = 1, authToken = valid_token, delete berhasil");
+        System.out.println("Expected  : 202 ACCEPTED");
+        System.out.println("Actual    : " + result.getHttpStatus());
+
+        assertEquals(HttpStatus.ACCEPTED, result.getHttpStatus());
     }
 }
